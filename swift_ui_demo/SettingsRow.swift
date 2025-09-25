@@ -15,9 +15,9 @@ struct SettingsRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: iconType.icon).foregroundColor(iconType.color).frame(width: 25, height: 25)
-//                .overlay {
-//                RoundedRectangle(cornerRadius: 6).stroke(Color(.systemGray5), lineWidth: 1)
-//            }
+            //                .overlay {
+            //                RoundedRectangle(cornerRadius: 6).stroke(Color(.systemGray5), lineWidth: 1)
+            //            }
             Text(title).font(.system(size: 17))
             Spacer()
             rightContent
@@ -32,6 +32,10 @@ struct SettingsRow: View {
     func handleTap(){
         switch type {
         case .navigation(let action):
+            action()
+        case .detail(_, let action):
+            action?()
+        case .button(_, let action):
             action()
         default:
             return
@@ -48,7 +52,7 @@ extension SettingsRow {
         case .toggle(let binding):
             AnyView(toggleRightContent(binding: binding))
         case .detail(let text, let action):
-            AnyView(detailRightContent(text: text, hasAction: action != nil))
+            AnyView(detailRightContent(text: text, action: action))
         case .stepper(value: let value, range: let range, step: let step):
             AnyView(stepperRightContent(value: value, range: range, step: step))
         case .picker(selection: let selection, options: let options, action: let action):
@@ -58,35 +62,31 @@ extension SettingsRow {
         case .display(text: let text):
             AnyView(displayRightContent(text: text))
         case .button(style: let style, action: let action):
-            AnyView(buttonRightContent(style: style))
+            AnyView(buttonRightContent(style: style, action))
         }
     }
     
     private func navigationRightContent(action: @escaping () -> Void) -> some View{
-         Image(systemName: "chevron.right")
+        Image(systemName: "chevron.right")
             .foregroundColor(.secondary) // 系统灰色，符合设置页风格
-            .font(.subheadline).onTapGesture {
-                action()
-            } // 图标大小适配行高
+            .font(.subheadline) // 图标大小适配行高
     }
     private func toggleRightContent(binding: Binding<Bool>) -> some View {
         Toggle("", isOn: binding)
             .labelsHidden() // 隐藏默认标签（标题已在左侧显示）
             .toggleStyle(SwitchToggleStyle(tint: .accentColor)) // 使用系统强调色
     }
-    private func detailRightContent(text: String, hasAction: Bool) -> some View {
+    private func detailRightContent(text: String,
+                                    action: (() -> Void)? = nil
+    ) -> some View {
         HStack(spacing: 4) { // 文本与图标水平排列
             Text(text)
                 .font(.subheadline) // 小号文本，区分主标题
                 .foregroundColor(.secondary) // 次要文本颜色
-            
-            if hasAction { // 有点击事件时显示箭头
+            if action != nil { // 有点击事件时显示箭头
                 Image(systemName: "chevron.right")
                     .foregroundColor(.secondary)
                     .font(.subheadline)
-                    .onTapGesture {
-                       
-                    }
             }
         }
     }
@@ -116,28 +116,32 @@ extension SettingsRow {
                 .font(.subheadline)
         }
     }
-    private func textFieldRightContent(text: Binding<String>, placeholder: String) -> some View {
+    private func textFieldRightContent(text: Binding<String>,
+                                       placeholder: String
+    ) -> some View {
         TextField(placeholder, text: text)
-           // 无边框样式，融入行内
+        // 无边框样式，融入行内
             .foregroundColor(.primary) // 输入文本为默认黑色/白色（跟随系统主题）
             .frame(maxWidth: 150) // 限制最大宽度，避免挤压左侧标题
             .multilineTextAlignment(.trailing) // 文本右对齐
     }
     
     private func displayRightContent(text: String) -> some View {
-    Text(text)
-        .font(.subheadline)
-        .foregroundColor(.secondary) // 次要文本颜色，区分主标题
-}
+        Text(text)
+            .font(.subheadline)
+            .foregroundColor(.secondary) // 次要文本颜色，区分主标题
+    }
     
-    private func buttonRightContent(style: SettingRowType.ButtonStyle) -> some View {
+    private func buttonRightContent(style: SettingRowType.ButtonStyle,
+                                    _: (() -> Void)? = nil
+    ) -> some View {
         Button(action: {}) { // 点击事件在handleTap中统一处理（见下文）
             Image(systemName: buttonIcon(for: style))
                 .foregroundColor(buttonColor(for: style))
         }
         .buttonStyle(.plain) // 去除默认按钮背景，仅保留图标/文本
     }
-     
+    
     // 根据按钮样式返回对应图标
     private func buttonIcon(for style: SettingRowType.ButtonStyle) -> String {
         switch style {
@@ -146,7 +150,7 @@ extension SettingsRow {
         case .prominent: "checkmark.circle" // 强调样式：确认图标
         }
     }
-     
+    
     // 根据按钮样式返回对应颜色
     private func buttonColor(for style: SettingRowType.ButtonStyle) -> Color {
         switch style {

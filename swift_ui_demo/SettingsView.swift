@@ -39,7 +39,7 @@ struct SettingsView: View {
                     }))
                     
                     SettingsRow(iconType: .language, title: "语言与地区", type: .detail(text: language, action: {
-                        print("选择语言")
+                        print("语言与地区")
                     }))
                     SettingsRow(iconType: .keyboard, title: "设备名称", type: .textField(text: $deviceName, placeholder: "输入名称"))
                     
